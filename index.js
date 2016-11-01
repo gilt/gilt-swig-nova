@@ -35,7 +35,7 @@ module.exports = function(gulp, swig) {
       }
     },
     isNewBuild,
-    novayml = YAML.load('./nova.yml'),
+    novayml = "",//YAML.load('./nova.yml'),
     novaEnv,
     novaStack,
 
@@ -68,6 +68,7 @@ module.exports = function(gulp, swig) {
   function getLatestVersionParsed() {
     return getLatestVersionTag().match(/v((\d+)\.(\d+)\.(\d+))/);
   }
+
 
   gulp.task('nova-check-options', function(done) {
     var checkFilesExist = [
@@ -236,9 +237,11 @@ module.exports = function(gulp, swig) {
 
       latestVersion = getLatestVersionParsed();
 
-      if (semverDiff(latestVersion[1], versionMatch[1]) === null) {
-        swig.log.error('New version can not be less than latest existing version: ' + latestVersion[1]);
-        process.exit(1);
+      if (semverDiff(latestVersion[1], versionMatch[1]) === null ) {
+        if(latestVersion[1] !== versionMatch[1]) {
+          swig.log.error('New version can not be less than latest existing version: ' + latestVersion[1]);
+          process.exit(1);
+        }
       } else {
         isNewBuild = true;
       }
@@ -307,16 +310,25 @@ module.exports = function(gulp, swig) {
     if (argv.h || argv.help) {    // --help
       outputHelp();
     }
-
-    swig.seq(
-      'nova-check-options',
-      'nova-check-aws-auth',
-      'nova-new-version',
-      'nova-specified-version',
-      'assets-deploy',
-      'nova-version-cleanup',
-      'nova-build-docker',
-      'nova-call-deploy',
-      done);
+    if(argv.version){
+      //all the other steps should of been done i.e. assets / tagging
+      swig.seq(
+        'nova-check-aws-auth',
+        'nova-specified-version'
+        'nova-build-docker',
+        'nova-call-deploy',
+        done);
+    } else {
+      swig.seq(
+        'nova-check-options',
+        'nova-check-aws-auth',
+        'nova-new-version',
+        'nova-specified-version',
+        'assets-deploy',
+        'nova-version-cleanup',
+        'nova-build-docker',
+        'nova-call-deploy',
+        done);
+    }
   });
 };
