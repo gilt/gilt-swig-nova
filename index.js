@@ -35,7 +35,7 @@ module.exports = function(gulp, swig) {
       }
     },
     isNewBuild,
-    novayml = "",//YAML.load('./nova.yml'),
+    novayml = YAML.load('./nova.yml'),
     novaEnv,
     novaStack,
 
