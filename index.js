@@ -154,13 +154,6 @@ module.exports = function(gulp, swig) {
       outputHelp();
     }
 
-    argConfig = {
-      env: argv.env,
-      stack: argv.stack,
-      newVersion: argv.newVersion,
-      version: argv.version
-    };
-
     done();
   });
 
