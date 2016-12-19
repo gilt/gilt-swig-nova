@@ -189,10 +189,10 @@ module.exports = function(gulp, swig) {
     }
 
     const stacks = novaEnv.stacks.map(s => s.stack_name)
-    let stack;
+    let stack = novaEnv.stacks.find(s => s.stack_name === argConfig.stack);
 
-    if (!argConfig.stack || !novaEnv.stacks.find(s => s.stack_name === argConfig.stack)) {
-      if (!novaEnv.stacks.find(s => s.stack_name === argConfig.stack)) {
+    if (!argConfig.stack || !stack) {
+      if (!stack) {
         swig.log.error(`Stack '${argConfig.stack}' for environment ${env} not found in your nova.yml.`);
       }
       if (stacks.length > 1) {
@@ -241,7 +241,7 @@ module.exports = function(gulp, swig) {
           type: 'input',
           name: 'version',
           message: 'What will be the new version?' + currentVersion,
-          validate: version => /^\d\.\d\.\d$/.test(version)
+          validate: version => /^\d+\.\d+\.\d+$/.test(version)
         })
         argConfig.version = answer.version;
       } else {
