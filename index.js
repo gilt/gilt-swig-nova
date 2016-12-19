@@ -120,7 +120,8 @@ module.exports = function(gulp, swig) {
     }
 
     if (argv.env) {
-      novaEnv = novayml.environments.find(e => e.name === argv.env);
+      novaEnv = novayml.environments.find(
+          e => e.name.toLowerCase() === argv.env.toLowerCase());
       if (!novaEnv) {
         swig.log.error(`Environment '${argv.env}' not found in your nova.yml.`);
         swig.log.info('Maybe a typo. Do not worry, we will ask you which ' +
@@ -131,7 +132,8 @@ module.exports = function(gulp, swig) {
     }
 
     if (argv.stack) {
-      if (!novayml.environments.find(e => e.stacks.find(s => s.stack_name === argv.stack))) {
+      if (!novayml.environments.find(e => e.stacks.find(
+            s => s.stack_name.toLowerCase() === argv.stack.toLowerCase()))) {
         swig.log.error(`Stack '${argv.stack}' not found in your nova.yml.`);
         swig.log.info('Maybe a typo. Do not worry, we will ask you which ' +
             'stack you want to deploy later.');
@@ -192,7 +194,8 @@ module.exports = function(gulp, swig) {
     let stack = novaEnv.stacks.find(s => s.stack_name === argConfig.stack);
 
     if (!argConfig.stack || !stack) {
-      if (!stack) {
+      // TODO: Confusing. Should think of a better way.
+      if (!argConfig.stack && !stack) {
         swig.log.error(`Stack '${argConfig.stack}' for environment ${env} not found in your nova.yml.`);
       }
       if (stacks.length > 1) {
@@ -240,7 +243,7 @@ module.exports = function(gulp, swig) {
         answer = yield prompt({
           type: 'input',
           name: 'version',
-          message: 'What will be the new version?' + currentVersion,
+          message: `What will be the new version? ${currentVersion}`,
           validate: version => /^\d+\.\d+\.\d+$/.test(version)
         })
         argConfig.version = answer.version;
