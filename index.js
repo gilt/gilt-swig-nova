@@ -127,7 +127,7 @@ module.exports = function(gulp, swig) {
         swig.log.info('Maybe a typo. Do not worry, we will ask you which ' +
             'environment you want to deploy to later.');
       } else {
-        argConfig.env = argv.env;
+        argConfig.env = novaEnv.name;
       }
     }
 
@@ -191,13 +191,19 @@ module.exports = function(gulp, swig) {
     }
 
     const stacks = novaEnv.stacks.map(s => s.stack_name)
-    let stack = novaEnv.stacks.find(s => s.stack_name === argConfig.stack);
+    let stack;
+
+    if (argConfig.stack) {
+      let stackConf = novaEnv.stacks.find(
+          s => s.stack_name.toLowerCase() === argConfig.stack.toLowerCase());
+      if (!stackConf) {
+        swig.log.error(`Stack '${argConfig.stack}' for environment ${env} not found in your nova.yml.`);
+      } else {
+        argConfig.stack = stack = stackConf.stack_name;
+      }
+    }
 
     if (!argConfig.stack || !stack) {
-      // TODO: Confusing. Should think of a better way.
-      if (!argConfig.stack && !stack) {
-        swig.log.error(`Stack '${argConfig.stack}' for environment ${env} not found in your nova.yml.`);
-      }
       if (stacks.length > 1) {
         answer = yield prompt({
           type: 'list',
