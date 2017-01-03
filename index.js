@@ -41,7 +41,8 @@ module.exports = function(gulp, swig) {
       env: null,
       stack: null,
       newVersion: null,
-      version: null
+      version: null,
+      yes: false
     };
 
   /**
@@ -59,6 +60,7 @@ module.exports = function(gulp, swig) {
     console.log('                   be incremented in package.json accordingly and tagged in git.');
     console.log('  --latest-tag     Get the latest version tag on the current');
     console.log('  --version        Specify new version manually. Value should be N.N.N and newer that latest');
+    console.log('  --yes            Skip final confirmation phase (useful for CI environments)');
     console.log('                   deployed version.');
     console.log('');
     process.exit(0);
@@ -147,9 +149,24 @@ module.exports = function(gulp, swig) {
       outputHelp();
     }
 
-    if (!argv.newVersion && /^(?:patch|minor|major)$/.test(argv.newVersion)) {
-      swig.log.error('Invalid value specified for --new-version option.');
-      outputHelp();
+    if (argv.newVersion) {
+      if (!/^(?:patch|minor|major)$/.test(argv.newVersion)) {
+        swig.log.error('Invalid value specified for --new-version option.');
+        outputHelp(); // exits
+      }
+      argConfig.newVersion = argv.newVersion;
+    }
+
+    if (argv.version) {
+      if (!/^\d+\.\d+\.\d+$/.test(argv.version)) {
+        swig.log.error('Invalid value specified for --version option.');
+        outputHelp(); // exits
+      }
+      argConfig.version = argv.version;
+    }
+
+    if (argv.yes) {
+      argConfig.yes = true;
     }
 
     done();
@@ -276,16 +293,18 @@ module.exports = function(gulp, swig) {
       }
     }
 
-    swig.log('');
-    answer = yield prompt({
-      type: 'confirm',
-      name: 'confirmed',
-      message: 'Do you want to proceed?',
-      default: true
-    });
-    if (!answer.confirmed) {
-      swig.log.info('Aborted!'.red);
-      process.exit(1);
+    if (!argConfig.yes) {
+      swig.log('');
+      answer = yield prompt({
+        type: 'confirm',
+        name: 'confirmed',
+        message: 'Do you want to proceed?',
+        default: true
+      });
+      if (!answer.confirmed) {
+        swig.log.info('Aborted!'.red);
+        process.exit(1);
+      }
     }
   }))
 
