@@ -42,7 +42,7 @@ module.exports = function(gulp, swig) {
       stack: null,
       newVersion: null,
       version: null,
-      yes: false
+      forcedRun: false
     };
 
   /**
@@ -60,7 +60,7 @@ module.exports = function(gulp, swig) {
     console.log('                   be incremented in package.json accordingly and tagged in git.');
     console.log('  --latest-tag     Get the latest version tag on the current');
     console.log('  --version        Specify new version manually. Value should be N.N.N and newer that latest');
-    console.log('  --yes            Skip final confirmation phase (useful for CI environments)');
+    console.log('  --force, -f      Skip confirmation phases (useful for CI environments)');
     console.log('                   deployed version.');
     console.log('');
     process.exit(0);
@@ -165,8 +165,8 @@ module.exports = function(gulp, swig) {
       argConfig.version = argv.version;
     }
 
-    if (argv.yes) {
-      argConfig.yes = true;
+    if (argv.force || argv.f) {
+      argConfig.forcedRun = true;
     }
 
     done();
@@ -191,15 +191,17 @@ module.exports = function(gulp, swig) {
         });
         env = answer.env;
       } else {
-        answer = yield prompt({
-          type: 'confirm',
-          name: 'envConfirmed',
-          message: `You will deploy to the AWS '${environments[0]}' environment. Correct?`,
-          default: true
-        });
-        if (!answer.envConfirmed) {
-          swig.log.info('Aborted!'.red);
-          process.exit(1);
+        if (!argConfig.forcedRun) {
+          answer = yield prompt({
+            type: 'confirm',
+            name: 'envConfirmed',
+            message: `You will deploy to the AWS '${environments[0]}' environment. Correct?`,
+            default: true
+          });
+          if (!answer.envConfirmed) {
+            swig.log.info('Aborted!'.red);
+            process.exit(1);
+          }
         }
         env = environments[0];
       }
@@ -207,7 +209,7 @@ module.exports = function(gulp, swig) {
       novaEnv = novayml.environments.find(e => e.name === env);
     }
 
-    const stacks = novaEnv.stacks.map(s => s.stack_name)
+    const stacks = novaEnv.stacks.map(s => s.stack_name);
     let stack;
 
     if (argConfig.stack) {
@@ -230,15 +232,17 @@ module.exports = function(gulp, swig) {
         });
         stack = answer.stack;
       } else {
-        answer = yield prompt({
-          type: 'confirm',
-          name: 'stackConfirmed',
-          message: `You will deploy to the AWS '${stacks[0]}' stack. Correct?`,
-          default: true
-        });
-        if (!answer.stackConfirmed) {
-          swig.log.info('Aborted!'.red);
-          process.exit(1);
+        if (!argConfig.forcedRun) {
+          answer = yield prompt({
+            type: 'confirm',
+            name: 'stackConfirmed',
+            message: `You will deploy to the AWS '${stacks[0]}' stack. Correct?`,
+            default: true
+          });
+          if (!answer.stackConfirmed) {
+            swig.log.info('Aborted!'.red);
+            process.exit(1);
+          }
         }
         stack = stacks[0];
       }
@@ -276,7 +280,7 @@ module.exports = function(gulp, swig) {
     }
 
     swig.log('');
-    swig.log.info('', 'This is what we got:');
+    swig.log.info('', 'Deploying with the following configuration:');
     swig.log.status('', ' Environment: '.cyan + `'${argConfig.env}'`.green);
     swig.log.status('', ' Stack: '.cyan + `'${argConfig.stack}'`.green);
     if (argConfig.version) {
@@ -293,12 +297,12 @@ module.exports = function(gulp, swig) {
       }
     }
 
-    if (!argConfig.yes) {
+    if (!argConfig.forcedRun) {
       swig.log('');
       answer = yield prompt({
         type: 'confirm',
         name: 'confirmed',
-        message: 'Do you want to proceed?',
+        message: 'Are you sure you want to proceed?',
         default: true
       });
       if (!answer.confirmed) {
@@ -306,7 +310,7 @@ module.exports = function(gulp, swig) {
         process.exit(1);
       }
     }
-  }))
+  }));
 
   gulp.task('pull-latest-tags', function() {
     swig.log.info('Fetching latest tags from git');
