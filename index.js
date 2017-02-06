@@ -176,9 +176,25 @@ module.exports = function(gulp, swig) {
     const prompt = inquirer.createPromptModule();
     const environments = novayml.environments.map(e => e.name);
     const v = getLatestVersionTag().replace('v', '').split('.').map(n => +n);
+    const curBranch = execSync('git rev-parse --abbrev-ref HEAD',
+        execSyncOpts.returnOutput);
 
     let answer;
     let env;
+
+    if (curBranch !== 'master') {
+      swig.log('');
+      answer = yield prompt({
+        type: 'confirm',
+        name: 'confirmed',
+        message: 'WARNING: You are about to release from a branch different than "master". Are you sure you want to continue?',
+        default: false
+      });
+      if (!answer.confirmed) {
+        swig.log.info('Aborted!'.red);
+        process.exit(1);
+      }
+    }
 
     if (!argConfig.env) {
       if (environments.length > 1) {
