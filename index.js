@@ -43,7 +43,7 @@ module.exports = function(gulp, swig) {
   const isNotMasterBranch = execSync('git rev-parse --abbrev-ref HEAD',
         execSyncOpts.returnOutput) !== 'master';
 
-  const lastRc = execSync('git tag -l --sort=-v:refname | egrep \'(?:\-rc)\' | head -n 1', execSyncOpts.returnOutput);
+  const lastRc = execSync(`git tag -l --sort=-v:refname | egrep '(?:\-rc\\d+)$' | head -n 1`, execSyncOpts.returnOutput);
 
   let isNewBuild;
   let novayml = YAML.load('./nova.yml');
@@ -81,8 +81,8 @@ module.exports = function(gulp, swig) {
 
   function getRCSuffix(version) {
     let suffix = '-rc1';
-    if (lastRc && lastRc.indexOf(version)) {
-      suffix = `-rc${Number(lastRc.replace('-rc', '')) + 1}`
+    if (lastRc && ~lastRc.indexOf(version)) {
+      suffix = `-rc${Number(lastRc.replace(/.+?\-rc/, '')) + 1}`
     }
     return suffix;
   }
@@ -411,9 +411,7 @@ module.exports = function(gulp, swig) {
 
       execSync('npm --no-git-tag-version version ' + newVersion);
 
-      if (!isNotMasterBranch) {
-        swig.pkg.version = newVersion;
-      }
+      swig.pkg.version = newVersion;
 
       isNewBuild = true;
       deployVersion = newVersion;
@@ -421,27 +419,30 @@ module.exports = function(gulp, swig) {
   });
 
   gulp.task('nova-specified-version', function() {
-    if (argConfig.version && !isNotMasterBranch) {
-      const versionMatch = argConfig.version.match(/^((\d+)\.(\d+)\.(\d+))$/);
+    if (argConfig.version) {
+      if (!isNotMasterBranch) {
+        const versionMatch = argConfig.version.match(/^((\d+)\.(\d+)\.(\d+))$/);
 
-      if (versionMatch === null) {
-        swig.log.error('value passed for version must be in the format N.N.N');
-        process.exit(1);
-      }
+        if (versionMatch === null) {
+          swig.log.error('value passed for version must be in the format N.N.N');
+          process.exit(1);
+        }
 
-      const latestVersion = getLatestVersionParsed();
+        const latestVersion = getLatestVersionParsed();
 
-      if (semverDiff(latestVersion[1], versionMatch[1]) === null) {
-        swig.log.error('New version can not be less than latest existing version: ' + latestVersion[1]);
-        process.exit(1);
-      } else {
-        isNewBuild = true;
+        if (semverDiff(latestVersion[1], versionMatch[1]) === null) {
+          swig.log.error('New version can not be less than latest existing version: ' + latestVersion[1]);
+          process.exit(1);
+        } else {
+          isNewBuild = true;
+        }
       }
 
       if (isNewBuild) {
         execSync('npm --no-git-tag-version version ' + argConfig.version);
         swig.pkg.version = argConfig.version;
       }
+
       deployVersion = argConfig.version;
     }
   });
@@ -452,7 +453,8 @@ module.exports = function(gulp, swig) {
       if (isNotMasterBranch) {
         gitCommands = [
           'git tag -a -m "Release Candidate v' + deployVersion + '" v' + deployVersion,
-          'git push --tags'
+          'git push --tags',
+          'git checkout package.json'
         ];
       } else {
         gitCommands = [
