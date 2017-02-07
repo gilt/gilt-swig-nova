@@ -448,15 +448,18 @@ module.exports = function(gulp, swig) {
   });
 
   gulp.task('nova-version-cleanup', function() {
+    swig.log.info('');
     if (isNewBuild) {
       let gitCommands;
       if (isNotMasterBranch) {
+        swig.log.info('Tagging RC version on git');
         gitCommands = [
           'git tag -a -m "Release Candidate v' + deployVersion + '" v' + deployVersion,
           'git push --tags',
           'git checkout package.json'
         ];
       } else {
+        swig.log.info('Tagging release version on git');
         gitCommands = [
           'git add package.json',
           'git tag -a -m "v' + deployVersion + '" v' + deployVersion,
@@ -471,6 +474,8 @@ module.exports = function(gulp, swig) {
   });
 
   gulp.task('nova-build-docker', function() {
+    swig.log.info('');
+    swig.log.info('Building Docker image');
     const imageAlreadyExists = execSync('docker images -q ' + novayml.service_name + ':' + deployVersion, execSyncOpts.returnOutput);
     const homeNpmrcPath = path.join(process.env.HOME, '.npmrc');
     const localNpmrcPath = path.join('.','.npmrc');
@@ -534,8 +539,8 @@ module.exports = function(gulp, swig) {
       'nova-new-version',
       'nova-specified-version',
       'assets-deploy',
-      'nova-version-cleanup',
       'nova-build-docker',
+      'nova-version-cleanup',
       'nova-call-deploy',
       done);
   });
