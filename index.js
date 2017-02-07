@@ -23,25 +23,27 @@ module.exports = function(gulp, swig) {
   const semverDiff = require('semver-diff');
   const YAML = require('yamljs');
   const path = require('path');
+
   const execSyncOpts = {
-      returnOutput: {
-        encoding: 'utf8'
-      },
-      pipeOutput: {
-        encoding: 'utf8',
-        stdio: 'inherit'
-      }
-    };
+    returnOutput: {
+      encoding: 'utf8'
+    },
+    pipeOutput: {
+      encoding: 'utf8',
+      stdio: 'inherit'
+    }
+  };
+
   const argConfig = {
-      env: null,
-      stack: null,
-      newVersion: null,
-      version: null,
-      forcedRun: false
-    };
+    env: null,
+    stack: null,
+    newVersion: null,
+    version: null,
+    forcedRun: false
+  };
 
   const isNotMasterBranch = execSync('git rev-parse --abbrev-ref HEAD',
-        execSyncOpts.returnOutput) !== 'master';
+        execSyncOpts.returnOutput).trim() !== 'master';
 
   const lastRc = execSync(`git tag -l --sort=-v:refname | egrep '(?:\-rc\\d+)$' | head -n 1`, execSyncOpts.returnOutput);
 
