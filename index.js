@@ -208,7 +208,17 @@ module.exports = function(gulp, swig) {
         process.exit(1);
       }
       swig.log.info('Since you are releasing from a branch that is not "master"');
-      swig.log.info('The version you will choose will be suffixed with "-rc"');
+      swig.log.info('the version you will choose will be suffixed with "-rc",');
+      swig.log.info('and you will only be allowed to release on staging.');
+      swig.log('');
+      if (!novayml.environments.find(e => e.stacks.find(
+            s => s.stack_name.toLowerCase() === 'staging'))) {
+        swig.log.info('It seems like you do not have a staging stack set in your nova.yml');
+        swig.log.info('Aborting the operation.'.red);
+        process.exit(1);
+      } else {
+        argConfig.stack = 'staging';
+      }
     }
 
     if (!argConfig.env) {
@@ -247,6 +257,10 @@ module.exports = function(gulp, swig) {
           s => s.stack_name.toLowerCase() === argConfig.stack.toLowerCase());
       if (!stackConf) {
         swig.log.error(`Stack '${argConfig.stack}' for environment ${env} not found in your nova.yml.`);
+        if (isNotMasterBranch) {
+          swig.log.info('Aborted!'.red);
+          process.exit(1);
+        }
       } else {
         argConfig.stack = stack = stackConf.stack_name;
       }
@@ -450,7 +464,7 @@ module.exports = function(gulp, swig) {
   });
 
   gulp.task('nova-version-cleanup', function() {
-    swig.log.info('');
+    swig.log('');
     if (isNewBuild) {
       let gitCommands;
       if (isNotMasterBranch) {
@@ -476,7 +490,7 @@ module.exports = function(gulp, swig) {
   });
 
   gulp.task('nova-build-docker', function() {
-    swig.log.info('');
+    swig.log('');
     swig.log.info('Building Docker image');
     const imageAlreadyExists = execSync('docker images -q ' + novayml.service_name + ':' + deployVersion, execSyncOpts.returnOutput);
     const homeNpmrcPath = path.join(process.env.HOME, '.npmrc');
