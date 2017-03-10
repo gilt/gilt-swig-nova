@@ -1,3 +1,7 @@
+## [DEPRECATED REPOSITORY]
+We moved all the works to https://github.com/gilt/swig
+
+
 # swig module to for use with nova deploy tool
 
 ### Install:
